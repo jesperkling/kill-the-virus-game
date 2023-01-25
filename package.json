@@ -1,0 +1,22 @@
+{
+    "name": "fed21-game",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "start": "node ./bin/server.js",
+        "dev": "cross-env DEBUG=chat:* nodemon ./bin/server.js",
+        "debug": "cross-env DEBUG=chat:*,socket.io:client,socket.io:server nodemon --inspect ./bin/server.js"
+    },
+    "dependencies": {
+        "cors": "^2.8.5",
+        "debug": "~2.6.9",
+        "dotenv": "^16.0.0",
+        "express": "^4.17.3",
+        "morgan": "~1.9.1",
+        "socket.io": "^4.4.1"
+    },
+    "devDependencies": {
+        "cross-env": "^7.0.3",
+        "nodemon": "^2.0.15"
+    }
+}
