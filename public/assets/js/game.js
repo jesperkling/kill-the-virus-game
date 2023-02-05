@@ -5,6 +5,12 @@ const gameWrapperEl = document.querySelector('#game-wrapper');
 const usernameFormEl = document.querySelector('#username-form');
 const gameboardEl = document.querySelector('#game-board');
 const waitingEl = document.querySelector('#waiting');
+const scoreEl = document.querySelector('#score');
+const reactionTimeEl = document.querySelector('#reaction');
+const timeEl = document.querySelector('#timer');
+const endGameEl = document.querySelector('#endgame');
+const endGameTextEl = document.querySelector('#endgametext');
+const playAgainEl = document.querySelector('#playAgain');
 
 const gameboard = [
     [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],
@@ -19,43 +25,12 @@ const gameboard = [
     [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],
 ]
 
-const renderGame = () => {
+const renderGame = (session) => {
     waitingEl.classList.add("hide");
 
     gameWrapperEl.classList.remove("hide");
 
-    let i = 1;
-
-    socket.emit("user:startgame", (status) => {
-        console.log(status);
-
-        if (status.success) {
-            gameboardEl.innerHTML = gameboard.map(y => 
-                `<div class=row>
-                    ${
-                        y.map(x => 
-                            `<div class="col" data-x="${x}">
-                                ${x}
-                            </div>`
-                        ).join("")
-                    }
-                </div>`
-            ).join("")
-
-            let cords = document.querySelector(`[data-y="${status.y}"] [data-x="${status.x}"]`);
-
-            setTimeout(() => {
-                var start = Date.now();
-
-                cords.addEventListener("click", e => {
-                    var reactionTime = Date.now() - start;
-
-                    console.log(reactionTime);
-                })
-                cords.classList.add("virus");
-            }, status.time)
-        }
-    });
+    socket.emit("user:startgame", session, socket.id);
 }
 
 socket.on("user:connected", (username) => {
@@ -70,9 +45,112 @@ socket.on("user:session", (username, session, startGame) => {
     console.log(`${username} joined session ${session}`);
 
     if (startGame) {
-        renderGame();
+        renderGame(session);
     }
 });
+
+socket.on("game:success", data => {
+
+    let i = 1;
+
+    if (data.success) {
+        gameboardEl.innerHTML = gameboard.map(y => 
+            `<div class="row" data-y="${i}">
+            ${i++,
+                y.map(x => 
+                    `<div class="col" data-x="${x}">
+                        
+                    </div>`
+                ).join('')
+            }
+            </div>`
+        ).join('')
+
+        let cords = document.querySelector(`[data-y="${data.y}"] [data-x="${data.x}"]`);
+
+        setTimeout(() => {
+            var start = Date.now();
+
+            cords.addEventListener("click", e => {
+                var reactionTime = Date.now() - start;
+                clicked = true;
+
+                cords.classList.remove("virus");
+                cords.classList.add("clickedvirus");
+
+                socket.emit("game:point", reactionTime, socket.id, data.session);
+            })
+            cords.classList.add("virus");
+        }, data.time)
+    }
+})
+
+socket.on("game:result", (winner, points, keepRunning, session) => {
+    console.log(points);
+
+    if (points.player1 === socket.id) {
+        scoreEl.innerHTML = `
+            <span>${points.player1Points}</span>
+                -
+            <span>${points.player2Points}</span>
+        `
+        timeEl.innerHTML = ''
+        reactionTimeEl.innerHTML = `
+            <span>${points.player1Name}${points.player1Reaction}</span>
+                -
+            <span>${points.player2Name}${points.player2Reaction}</span>
+        `
+    } else {
+        scoreEl.innerHTML= `
+            <span>${points.player2Points}</span>
+                -
+            <span>${points.player1Points}</span>
+        `
+        timeEl.innerHTML= '';
+        reactionTimeEl.innerHTML= `
+            <span>${points.player2Name}${points.player2Reaction}</span>
+            <br />
+            <span>${points.player1Name}${points.player1Reaction}</span>
+        `
+    }
+
+    if (keepRunning) {
+        winner = socket.id ? console.log("you won") : console.log("you lost");
+
+        setTimeout(() => {
+            console.log("new round");
+            renderGame(session);
+        }, 2000)
+    } else {
+        console.log("game over");
+        socket.emit("game:end", session, socket.id);
+    }
+})
+
+socket.on("game:endresult", (winnerGame, session) => {
+    if (winnerGame === socket.id) {
+        endGameEl.classList.remove("hide");
+        endGameTextEl.innerHTML = `
+            <div class="alert alert-info">Winner</div>
+        `
+    } else {
+        endGameEl.classList.remove("hide");
+        endGameTextEl.innerHTML = `
+            <div class="alert alert-danger">Loser</div>
+        `
+    }
+
+    playAgainEl.addEventListener("click", () => {
+        console.log("Play Again");
+
+        endGameEl.classList.add("hide");
+        socket.emit("game:restart", session, socket.id);
+    })
+})
+
+socket.on("game:restarted", (session) => {
+    renderGame(session)
+})
 
 usernameFormEl.addEventListener("submit", e => {
     e.preventDefault();
@@ -87,9 +165,7 @@ usernameFormEl.addEventListener("submit", e => {
 
             if (!status.start) {
                 waitingEl.classList.remove("hide");
-            } else {
-                renderGame();
-            }
+            } 
         }
     });
 });

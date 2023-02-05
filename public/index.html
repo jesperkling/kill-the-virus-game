@@ -16,7 +16,7 @@
         <div id="start" class="container">
             <form id="username-form">
                 <div class="mb-3">
-                    <input type="text" id="username" required placeholder="Username...">
+                    <input class="form-control form-control-lg" type="text" id="username" required placeholder="Username...">
                 </div>
                 <button type="submit" class="btn btn-primary">Connect to game</button>
             </form>
@@ -26,20 +26,36 @@
             <h3>Waiting for opponent...</h3>
         </div>
 
+        <div id="endgame" class="hide">
+            <div class="endgame-wrapper">
+                <div id="endgametext"></div>
+                <button id="playAgain" type="button" class="btn btn-primary">Play Again</button>
+            </div>
+        </div>
+
         <div id="game-wrapper" class="hide">
             <div id="game">
                 <h3>Game</h3>
                 <div id="game-board"></div>
             </div>
             <div id="users">
-                <h3>Users</h3>
+                <h3>Scoreboard</h3>
                 <ul id="online-users"></ul>
+                <div id="score">
+                    <span>0</span>
+                        -
+                    <span>0</span>
+                </div>
+                <div id="timer"></div>
+                <div id="reaction"></div>
             </div>
         </div>
 
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment-with-locales.min.js" integrity="sha512-LGXaggshOkD/at6PFNcp2V2unf9LzFq6LE+sChH7ceMTDP0g2kn6Vxwgg7wkPP7AAtX+lmPqPdxB47A0Nz0cMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
 
