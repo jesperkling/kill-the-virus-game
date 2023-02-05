@@ -7,7 +7,7 @@ const gameboardEl = document.querySelector('#game-board');
 const waitingEl = document.querySelector('#waiting');
 const scoreEl = document.querySelector('#score');
 const reactionTimeEl = document.querySelector('#reaction');
-const timeEl = document.querySelector('#timer');
+const timerEl = document.querySelector('#timer');
 const endGameEl = document.querySelector('#endgame');
 const endGameTextEl = document.querySelector('#endgametext');
 const playAgainEl = document.querySelector('#playAgain');
@@ -39,6 +39,14 @@ socket.on("user:connected", (username) => {
 
 socket.on("user:disconnected", (username) => {
     console.log(`${username} disconnected 😢`);
+
+    endGameEl.classList.remove("hide");
+    endGameTextEl.innerHTML = `${username} disconnected :(`;
+    playAgainEl.innerHTML = "Try again?";
+
+    playAgainEl.addEventListener("click", () => {
+        window.location.reload();
+    })
 });
 
 socket.on("user:session", (username, session, startGame) => {
@@ -87,6 +95,7 @@ socket.on("game:success", data => {
 
 socket.on("game:result", (winner, points, keepRunning, session) => {
     console.log(points);
+    console.log(reactionTimeEl)
 
     if (points.player1 === socket.id) {
         scoreEl.innerHTML = `
@@ -94,11 +103,11 @@ socket.on("game:result", (winner, points, keepRunning, session) => {
                 -
             <span>${points.player2Points}</span>
         `
-        timeEl.innerHTML = ''
+        timerEl.innerHTML = ''
         reactionTimeEl.innerHTML = `
-            <span>${points.player1Name}${points.player1Reaction}</span>
+            <span>${points.player1Name } - ${points.player1React} ms</span>
                 -
-            <span>${points.player2Name}${points.player2Reaction}</span>
+            <span>${points.player2Name} - ${points.player2React} ms</span>
         `
     } else {
         scoreEl.innerHTML= `
@@ -106,11 +115,11 @@ socket.on("game:result", (winner, points, keepRunning, session) => {
                 -
             <span>${points.player1Points}</span>
         `
-        timeEl.innerHTML= '';
+        timerEl.innerHTML= '';
         reactionTimeEl.innerHTML= `
-            <span>${points.player2Name}${points.player2Reaction}</span>
+            <span>${points.player2Name} - ${points.player2React} ms</span>
             <br />
-            <span>${points.player1Name}${points.player1Reaction}</span>
+            <span>${points.player1Name} - ${points.player1React} ms</span>
         `
     }
 
@@ -143,6 +152,14 @@ socket.on("game:endresult", (winnerGame, session) => {
     playAgainEl.addEventListener("click", () => {
         console.log("Play Again");
 
+        scoreEl.innerHTML = `
+            <span>0</span>
+                -
+            <span>0</span>
+        `;
+
+        reactionTimeEl.innerHTML = "";
+        waitingEl.classList.remove("hide");
         endGameEl.classList.add("hide");
         socket.emit("game:restart", session, socket.id);
     })

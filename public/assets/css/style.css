@@ -58,13 +58,11 @@
 .col {
     padding-right: 0px;
     padding-left: 0px;
-    border: 1px solid black;
     height: 60px;
 }
 
 #game-board {
     margin: 1rem;
-    border: 1px solid gray;
     border-radius: 5px;
 }
 
@@ -108,8 +106,17 @@
     width: 100%;
     display: flex;
     justify-content: space-evenly;
+    margin-top: 15px;
+}
+
+#reaction span {
+    font-size: 18px;
 }
 
 #score span {
     font-size: 20px;
+}
+
+.scoreboard {
+    text-align: center;
 }

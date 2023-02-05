@@ -2,15 +2,41 @@ const debug = require('debug')('chat:socket_controller');
 
 let io = null;
 
-const users = {};
-const sessions = [];
+let sessions = [];
+
+let playerDisconnected;
+let thisSession = false;
 
 const handleDisconnect = function() {
 	debug(`Client ${this.id} disconnected :(`);
 
-	this.broadcast.emit("user:disconnected", users[this.id]);
+	if (sessions.find(s => s.player1 === this.id)) {
+		thisSession = sessions.find(s => s.player1 === this.id);
+		playerDisconnected = thisSession.player1Name;
+		thisSession.player1 = "";
+		console.log("player 1 disconnected in", thisSession);
 
-	delete users[this.id];
+		if (thisSession.player2 === "") {
+			sessions = sessions.filter(s => s.id !== thisSession.id);
+			console.log("sessions", sessions);
+		}
+	}
+
+	if (sessions.find(s => s.player2 === this.id)) {
+		thisSession = sessions.find(s => s.player2 === this.id);
+		playerDisconnected = thisSession.player2Name;
+		thisSession.player2 = "";
+		console.log("player 2 disconnected in", thisSession);
+
+		if (thisSession.player1 === "") {
+			sessions = sessions.filter(s => s.id !== thisSession.id);
+			console.log("sessions", sessions);
+		}
+	}
+
+	if (thisSession.id) {
+		io.in(thisSession.id).emit("user:disconnect", playerDisconnected)
+	}
 }
 
 const createSession = function(socket, username) {
@@ -20,6 +46,7 @@ const createSession = function(socket, username) {
 
 	if (sessions.length < 1) {
 		sessions.push({
+			id: socket.id,
 			player1Name: username,
 			player1: socket.id,
 			player2Name: "",
@@ -36,22 +63,24 @@ const createSession = function(socket, username) {
 				session.player2Name = username;
 				session.player2 = socket.id;
 				session.full = true;
-				sessionToJoin = session.player1;
+				sessionToJoin = session.id;
 				startGame = true;
-			} else {
-				sessions.push({
-					player1Name: username,
-					player1: socket.id,
-					player2Name: "",
-					player2: "",
-					full: false,
-					player1Wins: 0,
-					player2Wins: 0,
-					rounds: 0,
-				})
-				sessionToJoin = socket.id;
 			}
 		})
+
+		if (!startGame) {
+			sessions.push({
+				id: socket.id,
+				player1Name: username,
+				player2Name: "",
+				player2: "",
+				full: false,
+				player1Wins: 0,
+				player2Wins: 0,
+				rounds: 0,
+			})
+			sessionToJoin = socket.id;
+		}
 	}
 
 	debug(sessions);
@@ -70,7 +99,6 @@ const createSession = function(socket, username) {
 }
 
 const handleUserJoined = function(username, callback) {
-	users[this.id] = username;
 
 	const startGame = createSession(this, username);
 
@@ -90,7 +118,7 @@ let player1Here = false;
 let player2Here = false;
 
 const handleGame = function(session, player) {
-	const thisSession = sessions.find(s => s.player1 === session)
+	const thisSession = sessions.find(s => s.id === session)
 
 	if (thisSession.player1 === player) {
 		player1Here = true;
@@ -132,7 +160,7 @@ let player1Reaction;
 let player2Reaction;
 
 const handleGamePoint = function(reactionTime, player, session) {
-	const thisSession = sessions.find(s => s.player1 === session);
+	const thisSession = sessions.find(s => s.id === session);
 
 	if (thisSession.player1 === player) {
 		player1Here = true;
@@ -155,7 +183,7 @@ const handleGamePoint = function(reactionTime, player, session) {
 
 	thisSession.player1 === compareReaction.player ? player1Reaction = compareReaction.reactionTime : player2Reaction = compareReaction.reactionTime;
 
-	thisSession.player1 === player ? player1Reaction : player2Reaction = reactionTime;
+	thisSession.player1 === player ? player1Reaction = reactionTime : player2Reaction = reactionTime;
 
 	thisSession.rounds++;
 
@@ -188,7 +216,7 @@ const handleGamePoint = function(reactionTime, player, session) {
 
 let winnerGame;
 const handleGameOver = function(session) {
-	const thisSession = sessions.find(s => s.player1 === session);
+	const thisSession = sessions.find(s => s.id === session);
 
 	if (thisSession.player1Wins > thisSession.player2Wins) {
 		winnerGame = thisSession.player1;
@@ -200,7 +228,7 @@ const handleGameOver = function(session) {
 }
 
 const handleGameRestart = function(session, player) {
-	const thisSession = sessions.find(s => s.player1 === session);
+	const thisSession = sessions.find(s => s.id === session);
 	
 	if (thisSession.player1 === player) {
 		player1Here = true;
